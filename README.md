@@ -1,68 +1,219 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+#### Dependencies
 
-## Available Scripts
+- styled-components
 
-In the project directory, you can run:
+```sh
+npm install styled-components --save
+```
 
-### `npm start`
+In your App.js create the following constants;
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+```javascript
+// App.js
+import Navbar from './Navbar'
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+const navlinks = [
+  { name: 'Home', to: '/' },
+  { name: 'About', to: '/about' },
+  { name: 'Contact', to: '/contact' },
+]
 
-### `npm test`
+const brand = { name: 'peekaboo', to: 'home' }
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+export default class App extends Component {
+  render() {
+    return (
+      <div className='App'>
+        <Navbar brand={brand} links={navlinks} />
+      </div>
+    )
+  }
+}
+```
 
-### `npm run build`
+In your `src/` folder create a `Navbar.js` file
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```javascript
+export default class Navbar extends Component {
+  static propTypes = {...}
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+  constructor(props) {...}
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+  componentDidMount() {...}
 
-### `npm run eject`
+  componentWillUnmount() {...}
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+  handleScroll() {...}
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+  render() {
 
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+    return (
+      <div>
+      ...
+      </div>
+    );
+  }
+}
+```
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+Let’s start with mapping our props to be as elements to be rendered on the page.
 
-## Learn More
+```javascript
+// Navbar.js
+render() {
+  const { brand, links } = this.props;
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+  const NavLinks = () =>
+    links.map((link, index) => (
+      <a key={index} href={link.to}>
+        {link.name}
+      </a>
+    ));
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+  return (
+    <div>
+        <a className="brand" href={brand}> {brand} </a>
+        <nav>
+          <NavLinks />
+        </nav>
+      </div>
+  );
+}
+```
 
-### Code Splitting
+Now let’s go ahead and add some validation to our props with `PropTypes`.
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
+```javascript
+import PropTypes from 'prop-types'
+//...
 
-### Analyzing the Bundle Size
+export default class Navbar extends Component {
+  static propTypes = {
+    brand: PropTypes.shape({
+      name: PropTypes.string.isRequired,
+      to: PropTypes.string.isRequired,
+    }),
+    links: PropTypes.arrayOf(
+      PropTypes.shape({
+        name: PropTypes.string.isRequired,
+        to: PropTypes.string.isRequired,
+      })
+    ),
+  }
+}
+```
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
+For our constructor we need to add
 
-### Making a Progressive Web App
+```javascript
+constructor(props) {
+    super(props);
+    this.state = {
+      show: true,
+      scrollPos: 0
+    };
+    this.handleScroll = this.handleScroll.bind(this);
+  }
+```
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
+We need to set the event listener after the component mounts.
 
-### Advanced Configuration
+```javascript
+componentDidMount() {
+  window.addEventListener("scroll", this.handleScroll);
+}
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
+componentWillUnmount() {
+  window.removeEventListener("scroll", this.handleScroll);
+}
+```
 
-### Deployment
+Now that we have a function attached to the scroll event we can set the function that will fire.
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
+```javascript
+handleScroll() {
+    const { scrollPos } = this.state;
+    this.setState({
+      scrollPos: document.body.getBoundingClientRect().top,
+      show: document.body.getBoundingClientRect().top > scrollPos
+    });
+  }
+```
 
-### `npm run build` fails to minify
+Now our `show` property in the state object will show **true** if we’re scrolling up and **false** if we’re scrolling up.
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+We can use a Conditional Operator on our div’s class name to toggle between `"active"` and `"hidden"`
+
+```javascript
+render() {
+  return <div className={this.state.show ? "active" : "hidden"} />;
+}
+```
+
+Toggle between those two classes won’t do anything until we define them in our css. For that we are going to create a _styled-component_
+Replace the `div` element with our new styled-component.
+
+```javascript
+import styled from "styled-components";
+
+render() {
+// ...
+return (
+    <StyledNavbar className={this.state.show ? "active" : "hidden"}>
+    // ...
+    </StyledNavbar>
+  );
+}
+
+const StyledNavbar = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  margin: 0 auto;
+  height: 3rem;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bolder;
+  background: cornflowerblue;
+  z-index: 1000;
+  a {
+    margin-right: 1rem;
+    font-weight: normal;
+  }
+  .brand {
+    font-style: italic;
+    margin-left: 1rem;
+    font-weight: bold;
+    color: white;
+    font-size: 1.25rem;
+  }`;
+```
+
+Now we’re going to create a `Transition` component that will wrap our `StyledNavbar`component.
+
+```javascript
+render() {
+    return (
+      <Transition>
+        <StyledNavbar className={this.state.show ? "active" : "hidden"}>
+        // ...
+        </StyledNavbar>
+      </Transition>
+    );
+  }
+
+const Transition = styled.div`
+  .active {
+    visibility: visible;
+    transition: all 200ms ease-in;
+  }
+  .hidden {
+    visibility: hidden;
+    transition: all 200ms ease-out;
+    transform: translate(0, -100%);
+  }
+`;
+```
